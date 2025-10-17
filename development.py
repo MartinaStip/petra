@@ -16,7 +16,6 @@ df["is_interpolated"] = False
 df["delta"] = df['date'].diff().dt.days.dropna()
 
 # Delta clean = splits series if cycle is unusually long 
-# ALSO EXCLUDE INTERPOLATED DATA
 df["delta_clean"] = np.select(
     [(df["delta"] > 35)],
     [np.nan],
@@ -29,16 +28,22 @@ df["day"] = df["date"].dt.dayofyear
 df["year"] = df["date"].dt.year
 
 # Prediction---------- --------------------------------------------------------
-# Simple moving median: 10 preceding cycles
+# Moving median: 10 preceding cycles
 df["mm"] = df["delta_clean"].rolling(window = 10, min_periods = 2).median().shift(1)
 df["pred_mm"] = df["date"] + pd.to_timedelta(df["mm"], unit = "d")
 
-df["mwm"] = 
+# Moving average: 10 preceding cycles
+df["mavg"] = df["delta_clean"].rolling(window = 10, min_periods = 2).mean().shift(1)
+df["pred_mavg"] = df["date"] + pd.to_timedelta(df["mavg"], unit = "d")
 
 # Compute errors MAKE IT A LOOP
 df["err_mm"] = np.select([np.isnan(df["delta_clean"].shift(-1))],
     [np.nan],
     default = (df["pred_mm"] - df["date"].shift(-1)).dt.days) 
+
+df["err_mavg"] = np.select([np.isnan(df["delta_clean"].shift(-1))],
+    [np.nan],
+    default = (df["pred_mavg"] - df["date"].shift(-1)).dt.days)
 
 # Errors dataframe: mae = mean absolute error, rmse = root mean squared error
 # rmse penalizes large error more
@@ -53,10 +58,37 @@ errors = pd.DataFrame({"method" : methods,
 errors.loc[errors["method"] == "mm","mae"] = df["err_mm"].abs().mean()
 errors.loc[errors["method"] == "mm","rmse"] = np.sqrt((df["err_mm"] ** 2).mean())
 
+errors.loc[errors["method"] == "mavg","mae"] = df["err_mavg"].abs().mean()
+errors.loc[errors["method"] == "mavg","rmse"] = np.sqrt((df["err_mavg"] ** 2).mean())
+
+# Pick method with the lowest error
+best_method = errors.loc[errors["mae"].idxmin(), "method"]
+
+# Current prediction
+prediction = df.loc[df.index[-1],"pred_"+ best_method]
+
+# Last + pred date visualisation -------------------------------------------
+today = datetime.today()
+donut = [
+    int((today - df.loc[df.index[-1], "date"]).days),
+    int((prediction - today).days)
+]
+
+inner_circle = plt.Circle( (0,0), 0.7, color = 'white') # to change pie into donut 
+
+sns.set_style("white")
+sns.set_context("talk")
+#sns.set_context("paper")
+
+plt.clf()
+plt.pie(donut)
+p = plt.gcf()
+p.gca().add_artist(inner_circle)
 
 
-# Basic visualisation -------------------------------------------------------
-# Length of single cycles
+plt.show()
+
+# Raw data visualisation ---------------------------------------------------
 sns.set_style("white")
 #sns.set_context("talk")
 sns.set_context("paper")
