@@ -68,6 +68,7 @@ best_method = errors.loc[errors["mae"].idxmin(), "method"]
 prediction = df.loc[df.index[-1],"pred_"+ best_method]
 
 # Last + pred date visualisation -------------------------------------------
+c_main = "blue"
 today = datetime.today()
 donut = [
     int((today - df.loc[df.index[-1], "date"]).days),
@@ -79,6 +80,7 @@ inner_circle = plt.Circle( (0,0), 0.7, color = 'white') # to change pie into don
 sns.set_style("white")
 sns.set_context("talk")
 #sns.set_context("paper")
+
 
 plt.clf()
 plt.pie(donut)
