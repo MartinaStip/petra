@@ -4,28 +4,58 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Visual style -----------------------------------------------------
+c_main = "#84127f"
+c_outline = "black"
+lw = 0.5
+
+
 # Intro -------------------------------------------------------------
 # Read data + intro settings
 df = pd.read_csv("data/testdata.csv")
 df["date"] = pd.to_datetime(df["date"], format="%d.%m.%Y")
-df = df.sort_values(by = "date")
-df["is_interpolated"] = False
+df = df.sort_values(by = "date") 
 
-# Cycle length + series characteristics ------------------------------
+# Cycle length -------------------------------------------------------
 # Delta = cycle length
 df["delta"] = df['date'].diff().dt.days.dropna()
 
 # Delta clean = splits series if cycle is unusually long 
+# This may be due to omitted recording, pregnancy, medical treatment etc. 
+# I dont want to speculate about the cause and try to fix possible omission
 df["delta_clean"] = np.select(
     [(df["delta"] > 35)],
     [np.nan],
     default = df["delta"])
 
-# Day of year
-df["day"] = df["date"].dt.dayofyear
+# Raw data visualisation ---------------------------------------------------
+sns.set_style("white")
+#sns.set_context("talk")
+sns.set_context("paper")
 
-# Year
-df["year"] = df["date"].dt.year
+cyclelength_min = df["delta_clean"].min()
+cyclelength_max = df["delta_clean"].max() # max length of cycle is set when defining delta_clean 
+
+plt.clf()
+# This makes the line to interrupt when data are missing
+for _, group in df.groupby((df["delta_clean"].isna()).cumsum()):
+    segment = group.dropna(subset=["delta_clean"])
+    if not segment.empty:
+        sns.lineplot(data = segment, 
+            x = "date", y = "delta_clean", 
+            linestyle = ':', color = c_main, legend = False)
+
+sns.scatterplot(data=df, x = "date", y = "delta_clean", 
+    color = c_main)  
+
+plt.title("Your data")
+plt.ylim(cyclelength_min - 1, cyclelength_max + 1)  # set y-axis limits
+sns.despine(left = False, bottom = True) # Remove top/right/left/bottom spines (frame)
+plt.ylabel("Length of cycle")
+plt.xlabel("")
+
+plt.show()
+
 
 # Prediction---------- --------------------------------------------------------
 # Moving median: 10 preceding cycles
@@ -66,68 +96,59 @@ best_method = errors.loc[errors["mae"].idxmin(), "method"]
 
 # Current prediction
 prediction = df.loc[df.index[-1],"pred_"+ best_method]
+prediction = df[f"pred_{best_method}"].iloc[-1]
 
 # Last + pred date visualisation -------------------------------------------
 c_main = "blue"
+c_outline = "black"
+lw = 0.5
+
 today = datetime.today()
 donut = [
     int((today - df.loc[df.index[-1], "date"]).days),
     int((prediction - today).days)
 ]
 
-inner_circle = plt.Circle( (0,0), 0.7, color = 'white') # to change pie into donut 
+inner_circle = plt.Circle( (0,0), 0.7, color = 'white', ec = c_outline, linewidth = lw) # to change pie into donut 
 
 sns.set_style("white")
 sns.set_context("talk")
 #sns.set_context("paper")
 
-
 plt.clf()
-plt.pie(donut)
-p = plt.gcf()
-p.gca().add_artist(inner_circle)
+plt.pie(donut, colors = ["blue", "white"], 
+    wedgeprops = {"edgecolor":c_outline,'linewidth': lw, 'linestyle': 'solid', 'antialiased': True})
+p_pred = plt.gcf() # get current figure
+p_pred.gca().add_artist(inner_circle) # get current axes + adds circle
 
+plt.title("Estimated next date: " + str(prediction.date()) + 
+    "\nLast date: " + str(df.loc[df.index[-1], "date"].date()) )
+
+plt.text(0, 0,                   # coordinates (center)
+    "Next period\nin " + str(int((prediction - today).days)) + " days",    
+    horizontalalignment='center',
+    verticalalignment='center',
+    fontsize=14,
+    fontweight='bold')
 
 plt.show()
 
-# Raw data visualisation ---------------------------------------------------
-sns.set_style("white")
-#sns.set_context("talk")
-sns.set_context("paper")
-
-df["theta"] = 2 * np.pi * df["day"] / df["day"].max()
-
-# Create polar plot
-fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(8, 8))
-
-
+# Viz of aggregated trends --------------------------------------------------
 plt.clf()
-sns.lineplot(df, x = "theta", y = "delta_clean", 
-    hue = "year", 
-    #sizes=(1, 5),
-    errorbar = None, estimator = None)
-
-# PREKLRESLIT PRES TO BREAKS BILOU BARVOU, ABY TO BYLO DOTTED?
-sns.lineplot(df, x = "day", y = "delta_clean", 
-    hue = "year", 
-    errorbar = None, linestyle=':', legend = False)
-
-sns.scatterplot(data=df, x="day", y="delta_clean",
-    hue="year", size="year", sizes=(50, 200),
-    legend = False)  
-
-#plt.ylim(15, 40)  # set y-axis limits
-plt.title("Length of cycles")
-
-sns.despine(left = False, bottom = True) # Remove top/right/left/bottom spines (frame)
-plt.ylabel("")
-plt.xlabel("Time in calendar year")
-plt.gca().xaxis.set_visible(False) # Remove x-axis completely
-
+sns.lineplot(df, x = "date", y = "mm", 
+    errorbar = None, legend = False)
+plt.ylim(15, 40)  # set y-axis limits    
 plt.show()
 
 
-# Prediction ----------------------------------------------------------------
+plt.clf()
+sns.lineplot(df, x = "date", y = "mavg", 
+    errorbar = None, legend = False)
+
+plt.ylim(15, 40)  # set y-axis limits    
+plt.show()
+
+
 
 
 
@@ -135,11 +156,11 @@ plt.show()
 # Series status:
 # start, end = start and end of continual series
 # mid = inside continual series
-df["series_status"] = np.select([(pd.isna(df["delta"]) | (df["delta"] > 35)), 
-    (pd.isna(df["delta_lead"]) | (df["delta_lead"] > 35))],
-    ["start", "end"],
-    default = "mid"
-    )
+# df["series_status"] = np.select([(pd.isna(df["delta"]) | (df["delta"] > 35)), 
+#     (pd.isna(df["delta_lead"]) | (df["delta_lead"] > 35))],
+#     ["start", "end"],
+#     default = "mid"
+#     )
 
 # df["delta_lead"] = df['delta'].shift(-1)
 
@@ -147,3 +168,17 @@ df["series_status"] = np.select([(pd.isna(df["delta"]) | (df["delta"] > 35)),
 # df["index"] = np.concatenate(
 #     [np.arange(13 - len(df) % 12, 13, 1),
 #     np.tile(np.arange(1, 13, 1), len(df)//12)])  
+
+# fig, ax = plt.subplots() # start an empty plot
+# ax.pie(donut, colors = ["blue", "white"], # create content of the plot
+#     wedgeprops = {"edgecolor":"black",'linewidth': 0.5, 'linestyle': 'solid', 'antialiased': True}
+#     )
+# ax.set_title("Estimated next date: " + str(prediction.date()) + 
+#     "\nLast date: " + str(df.loc[df.index[-1], "date"].date()) 
+# )
+
+# Day of year
+# df["day"] = df["date"].dt.dayofyear
+
+# # Year
+# df["year"] = df["date"].dt.year
