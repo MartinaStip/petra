@@ -95,7 +95,6 @@ errors.loc[errors["method"] == "mavg","rmse"] = np.sqrt((df["err_mavg"] ** 2).me
 best_method = errors.loc[errors["mae"].idxmin(), "method"]
 
 # Current prediction
-prediction = df.loc[df.index[-1],"pred_"+ best_method]
 prediction = df[f"pred_{best_method}"].iloc[-1]
 
 # Last + pred date visualisation -------------------------------------------
@@ -104,8 +103,9 @@ c_outline = "black"
 lw = 0.5
 
 today = datetime.today()
+
 donut = [
-    int((today - df.loc[df.index[-1], "date"]).days),
+    int((today - df["date"].iloc[-1]).days),
     int((prediction - today).days)
 ]
 

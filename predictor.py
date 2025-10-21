@@ -39,16 +39,17 @@ class Predictor:
         self.df = self.create_df()
 
     def last_date(self):
-        last_date = str(self.df["date"].iloc[-1].date())
-        return last_date
+        """Return last recorded date"""
+        return self.df["date"].iloc[-1]
 
     def predicted_date(self):
+        """Return current predicted date"""
         predicted_date = self.df["pred_mm"].iloc[-1]
         
         if pd.isna(predicted_date):
             return None
 
-        return str(predicted_date.date())
+        return predicted_date.date()
    
 # Test
 if __name__ == '__main__':
@@ -68,4 +69,4 @@ if __name__ == '__main__':
    print(f"Predicted date: {predictor.predicted_date()}")
     
  
-
+xx = predictor.predicted_date()

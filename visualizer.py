@@ -1,54 +1,90 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from datetime import datetime
 
 class Visualizer:
     def __init__(self, predictor):
         self.predictor = predictor
-        self.df = self.predictor.df()
+        self.df = self.predictor.df
         self.last = self.predictor.last_date()
         self.pred = self.predictor.predicted_date()
     
+    def refresh(self):
+        """Refresh data from predictor"""
+        self.df = self.predictor.df
+        self.last = self.predictor.last_date()
+        self.pred = self.predictor.predicted_date()
+
     def plot_current_cycle(self):
         c_outline = "black"
         lw = 0.5
+        c_main = "#84127f"
 
+        # Refresh data
+        self.refresh()
+
+        # Check if prediction is available
+        if self.pred is None:
+            print("Not enough data for prediction")
+            return
+
+        self.df = self.predictor.df # Refresh before plotting
         today = datetime.today()
-        donut = [
-            int((today - self.last).days),
-            int((self.pred - today).days)
-        ]
+        days_since = int((today - self.last).days)
+        days_until = int((self.pred - today).days)
 
+        # Handle negative days_until (overdue)
+        if days_until < 0:
+            donut = [days_since, 0]
+        else:
+            donut = [days_since, days_until]
+
+        donut = [12,15]
         inner_circle = plt.Circle( (0,0), 0.7, color = 'white', ec = c_outline, linewidth = lw) # to change pie into donut 
 
         sns.set_style("white")
         sns.set_context("talk")
 
         plt.clf()
-        plt.pie(donut, colors = ["blue", "white"], 
+        plt.pie(donut, colors = [c_main, "white"], 
             wedgeprops = {"edgecolor":c_outline,'linewidth': lw, 'linestyle': 'solid', 'antialiased': True})
         p_pred = plt.gcf() # get current figure
         p_pred.gca().add_artist(inner_circle) # get current axes + adds circle
 
-        plt.title("Estimated next date: " + str(prediction.date()) + 
-            "\nLast date: " + str(df.loc[df.index[-1], "date"].date()) )
+        # plt.title(f"Estimated next date: {str(self.pred.date())}\nLast date: {str(self.last_date())}")
 
-        plt.text(0, 0,                   # coordinates (center)
-            "Next period\nin " + str(int((prediction - today).days)) + " days",    
-            horizontalalignment='center',
-            verticalalignment='center',
-            fontsize=14,
-            fontweight='bold')
+        # Center text
+        if days_until >= 0:
+            center_text = f"Next period\nin {days_until} days"
+        else:
+            center_text = f"Period overdue\nby {abs(days_until)} days"
+
+        # plt.text(0, 0,  center_text,
+        #     horizontalalignment='center',
+        #     verticalalignment='center',
+        #     fontsize=14,
+        #     fontweight='bold')
 
         plt.show()
 
     def plot_series(self):
+        """Plot cycle lengths over time"""
+        # Refresh data
+        self.refresh()
+        
+        # Check if there's data
+        if self.df["delta_clean"].dropna().empty:
+            print("Not enough data to plot")
+            return
+
+        self.df = self.predictor.df  # Refresh before plotting
         cyclelength_min = self.df["delta_clean"].min()
         cyclelength_max = self.df["delta_clean"].max() # max length of cycle is set when defining delta_clean 
         c_main = "#84127f"
 
         plt.clf()
-        # This makes the line to interrupt when data are missing
+         # Plot line segments (interrupted where data is missing)
         for _, group in self.df.groupby((self.df["delta_clean"].isna()).cumsum()):
             segment = group.dropna(subset=["delta_clean"])
             if not segment.empty:
@@ -70,22 +106,37 @@ class Visualizer:
 # Test
 if __name__ == '__main__':
     from data_manager import DataManager
+    from predictor import Predictor
     
+    # Setup
     dm = DataManager()
-    visualizer = Visualizer(dm)
     
-    # Add sample data with one interpolated
-    dm.add_period('2024-01-15', is_interpolated=False)
-    dm.add_period('2024-02-12', is_interpolated=False)
-    dm.add_period('2024-03-10', is_interpolated=False)
-    dm.add_period('2024-04-08', is_interpolated=False)
-    dm.add_period('2024-05-06', is_interpolated=False)
-    dm.add_period('2024-06-05', is_interpolated=True)  # Interpolated
-    dm.add_period('2024-07-02', is_interpolated=False)
+    # Add sample data
+    print("Adding sample periods...")
+    dm.add_period('2024-01-15')
+    dm.add_period('2024-02-12')
+    dm.add_period('2024-03-10')
+    dm.add_period('2024-04-08')
+    dm.add_period('2024-05-06')
+    dm.add_period('2024-06-05')
+    dm.add_period('2024-07-02')
+    dm.add_period('2024-07-30')
+    dm.add_period('2024-08-28')
+    dm.add_period('2024-09-26')
     
-    print("Trend:", visualizer.get_trend_description())
-    print("\nShowing cycle length chart...")
-    visualizer.plot_cycle_lengths()
+    # Create predictor and visualizer
+    predictor = Predictor(dm)
+    visualizer = Visualizer(predictor)
     
-    print("\nShowing trend chart...")
-    visualizer.plot_cycle_trend()
+    print(f"\nLast period: {predictor.last_date().date()}")
+
+    if predictor.predicted_date():
+        print(f"Predicted next period: {predictor.predicted_date().date()}")  
+    else:
+        print('Not enough data')
+    
+    print("\nShowing current cycle chart...")
+    visualizer.plot_current_cycle()
+    
+    print("\nShowing cycle series chart...")
+    visualizer.plot_series()
