@@ -49,7 +49,7 @@ class Predictor:
         if pd.isna(predicted_date):
             return None
 
-        return predicted_date.date()
+        return predicted_date
    
 # Test
 if __name__ == '__main__':
@@ -69,4 +69,4 @@ if __name__ == '__main__':
    print(f"Predicted date: {predictor.predicted_date()}")
     
  
-xx = predictor.predicted_date()
+
