@@ -1,17 +1,24 @@
 Simple period tracker 
 
 # Front end
-## Main window
-- plot with current cycle: last period
+## Main window (elements from top to bottom)
+- donut plot with current cycle: 
+    - fill = how much time since last period till the estimated next period
+    - the fill is full circle if the period is due or overdue
+    - title: last date [last date],  estimated next date [est date]
+    - text in the middle of donut: next date in x-y days
+
 - new entry: 
     - calendar with pre-filled current day
     - add button
     - add with note button
+
 - data & statistics button
 
-## data & statistics window
-- plot series (see the description in the visualizer)
-- table with raw data (see the description in the data manager) + buttons to edit/delete each entry
+## Data & statistics window
+- plot raw data: each entry as point + lines between them if they represent a meaningfull series 
+    (distance between entries < 35 days) 
+- table with raw data + buttons to edit/delete each entry
 
 # Backend
 ## data_manager
