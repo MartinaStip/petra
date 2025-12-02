@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Preliminary code for my CycleTracker class
+
 # Visual style -----------------------------------------------------
 c_main = "#8f1029"
 c_outline = "black"
@@ -36,7 +38,12 @@ sns.set_context("paper")
 cyclelength_min = df["delta_clean"].min()
 cyclelength_max = df["delta_clean"].max() # max length of cycle is set when defining delta_clean 
 
-plt.clf()
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.scatter(df["date"], df["delta_clean"], color = c_main)
+ax.set_xlabel("Date")
+ax.set_ylabel("Cycle length (days)")
+ax.set_title("Your data")
+
 # This makes the line to interrupt when data are missing
 for _, group in df.groupby((df["delta_clean"].isna()).cumsum()):
     segment = group.dropna(subset=["delta_clean"])
@@ -45,17 +52,15 @@ for _, group in df.groupby((df["delta_clean"].isna()).cumsum()):
             x = "date", y = "delta_clean", 
             linestyle = ':', color = c_main, legend = False)
 
-sns.scatterplot(data=df, x = "date", y = "delta_clean", 
-    color = c_main)  
-
-plt.title("Your data")
-plt.ylim(cyclelength_min - 1, cyclelength_max + 1)  # set y-axis limits
-sns.despine(left = False, bottom = True) # Remove top/right/left/bottom spines (frame)
-plt.ylabel("Length of cycle")
-plt.xlabel("")
-
-plt.show()
-
+# plt.clf()
+# sns.scatterplot(data=df, x = "date", y = "delta_clean", 
+#     color = c_main)  
+# plt.title("Your data")
+# plt.ylim(cyclelength_min - 1, cyclelength_max + 1)  # set y-axis limits
+# sns.despine(left = False, bottom = True) # Remove top/right/left/bottom spines (frame)
+# plt.ylabel("Length of cycle")
+# plt.xlabel("")
+# plt.show()
 
 # Prediction---------- --------------------------------------------------------
 # Moving median: 10 preceding cycles
