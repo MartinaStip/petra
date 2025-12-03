@@ -16,6 +16,13 @@ import base64
 
 matplotlib.use("Qt5Agg") # to show plots interactively
 
+#Colors and style
+c_main = "#870765"
+c_ring = "#9c5676"
+c_outline = "black"
+lw = 0.5
+
+
 # Replace csv with testdata
 testdata = pd.read_csv("data/testdata.csv")
 testdata["date"] = pd.to_datetime(testdata['date'], format='%d.%m.%Y', errors="coerce")
@@ -41,51 +48,10 @@ tracker.delta_75
 tracker.dates['date'].iloc[-1]
 tracker.pred_date
 tracker.time_med
-tracker.pred_time
-
-# Current delta
-datetime.now().date() - (pd.to_datetime(tracker.dates['date'].iloc[-1])).date()
-
-pred50 = (pd.to_datetime(tracker.dates['date'].iloc[-1]) + tracker.delta_med).date()
-pred25 = (pd.to_datetime(tracker.dates['date'].iloc[-1]) + tracker.delta_25).date()
-pred75 = (pd.to_datetime(tracker.dates['date'].iloc[-1]) + tracker.delta_75).date()
-
-time_med = (pred50 - datetime.now().date()).days
-
-
-# # Predicted date = last date + median delta
-# delta_med = pd.Timedelta(days = recent["delta_clean"].quantile(0.5))
-# pred_date = (pd.to_datetime(tracker.dates['date'].iloc[-1]) + delta_med).strftime('%Y-%m-%d')
-# time_med = (pd.to_datetime(tracker.dates['date'].iloc[-1]) + delta_med - datetime.today().date).days
+tracker.time_2575
 
 
 
-# # Predicted delta = q25 to q75
-# # Predicted time = remaining time
-# # The set step is to remove duplicities 
-# delta_25 = pd.Timedelta(days = tracker.recent["delta_clean"].quantile(0.25))
-# delta_75 = pd.Timedelta(days = tracker.recent["delta_clean"].quantile(0.75))
-# pred_time = list(set([
-#     ((pd.to_datetime(tracker.dates['date'].iloc[-1]) + delta_25).date() - datetime.today().date()).days,
-#     (pd.to_datetime(tracker.dates['date'].iloc[-1]) + delta_75 - datetime.today().date()).days,
-# ]))
-
-# Prediction text for plot ---
-pred_time_abs = [abs(x) for x in tracker.pred_time]
-
-if tracker.pred_time == [1]: 
-    range = "1 day"
-elif len(tracker.pred_time) == 1: 
-    range =  f"{tracker.pred_time} days"
-else:
-    range = f"{min(pred_time_abs)} -- {max(pred_time_abs)} days"
-
-if max(tracker.pred_time) < 0:
-    pred_text = f"Period was due {range} ago"
-elif min(tracker.pred_time) <= 0 <= max(tracker.pred_time): 
-    pred_text = f"Period is due"
-else:
-    pred_text = f"Next period\nin {range}"
 
 # Prediction plot ---
 donut = [
@@ -129,12 +95,12 @@ ax.set_title("Your data")
 ax.set_ylim(15, 35)
 
 # This makes the line to interrupt when data are missing
-for _, group in df.groupby((tracker.df["delta_clean"].isna()).cumsum()):
+for _, group in tracker.df.groupby((tracker.df["delta_clean"].isna()).cumsum()):
     segment = group.dropna(subset = ["delta_clean"])
 if not segment.empty:
     sns.lineplot(data = segment, 
         x = "date", y = "delta_clean", 
-        linestyle = ':', color = c_main, legend = False)
+        linestyle = ':', color = c_ring, legend = False)
 
 
 

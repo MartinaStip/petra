@@ -12,7 +12,9 @@ import base64
 
 matplotlib.use("Agg")
 
-c_main = "#b80d62"
+#Colors and style
+c_main = "#870765"
+c_ring = "#9c5676"
 c_outline = "black"
 lw = 0.5
 
@@ -22,8 +24,6 @@ class CycleTracker:
         self.dates = None
         self.df = None
         self.load_data()
-        self.c_main = c_main
-        self.c_outline = c_outline
     
     def load_data(self):
         """Load data from file"""
@@ -105,7 +105,7 @@ class CycleTracker:
         if not segment.empty:
             sns.lineplot(data = segment, 
                 x = "date", y = "delta_clean", 
-                linestyle = ':', color = c_main, legend = False)
+                linestyle = ':', color = c_ring, legend = False)
 
         buf = io.BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
@@ -148,7 +148,7 @@ class CycleTracker:
         #sns.set_context("paper")
         fig_pred, ax = plt.subplots(figsize = (8, 8))
 
-        ax.pie(self.donut, colors = [c_main, "white"], 
+        ax.pie(self.donut, colors = [c_ring, "white"], 
             startangle=90, counterclock=False,
             wedgeprops = {"edgecolor":c_outline,'linewidth': lw, 'linestyle': 'solid', 'antialiased': True})
         p_pred = plt.gcf() # get current figure
@@ -156,10 +156,10 @@ class CycleTracker:
 
         plt.text(0, 0,                   # coordinates (center)
             pred_text,    
-            horizontalalignment='center',
-            verticalalignment='center',
-            fontsize=14,
-            fontweight='bold')
+            horizontalalignment = 'center',
+            verticalalignment = 'center',
+            fontsize = 20,
+            fontweight ='bold')
 
         buf = io.BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
@@ -172,8 +172,7 @@ class CycleTracker:
 def main(page: ft.Page):
     page.title = "Main page"
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
-
-    c_main = "#b80d62"
+    #c_main = "#b80d62"
     today = datetime.now().strftime('%Y-%m-%d')
     
     # Initialize tracker
@@ -262,7 +261,7 @@ def main(page: ft.Page):
                     [add_today_button, choose_date],
                     alignment=ft.MainAxisAlignment.CENTER,
                 ),
-                padding=ft.padding.symmetric(vertical=20),
+                padding=ft.padding.symmetric(vertical = 50),
             ),
             ft.Row(
                 [plot_image_raw],
@@ -273,3 +272,7 @@ def main(page: ft.Page):
 
 
 ft.app(main)
+
+# Test in terminal
+# C:\Users\mmars\AppData\Local\Python\pythoncore-3.14-64\Scripts\flet.exe run D:\github\petra\flet_app.py
+# flet run --android 

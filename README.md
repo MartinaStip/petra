@@ -22,4 +22,11 @@ Simple period tracker
 
 # TO DO
 - data table (another page?) with a function to delete an entry
+- automated tests of the class
+- MOVE DEFINITION OF BUTTONS OUTSIDE THE PAGE LAYOUT
 
+# Possible structure when it gets more complex
+2-3 files:
+- cycle_tracker.py - the CycleTracker class (may be reused for a web app)
+- main.py - the Flet UI code
+- (optional) config.py - for colors and constants
