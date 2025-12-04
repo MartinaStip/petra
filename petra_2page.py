@@ -14,8 +14,8 @@ matplotlib.use("Agg")
 
 # Colors
 c_main = "#870765"
-c_ring = "#B5B581"
-c_outline = "#878760"
+c_ring = "#D9A80B"
+c_outline = "876907"
 lw = 0.5
 
 class CycleTracker:
@@ -29,27 +29,45 @@ class CycleTracker:
         """Load data from file"""
         if os.path.exists(self.csv_file):
             self.dates = pd.read_csv(self.csv_file, header=None, names=['date'])
+            self.dates = self.dates.sort_values("date").reset_index(drop=True)
         else:
             self.dates = pd.DataFrame(columns=['date'])
         self.process_data()
     
     def process_data(self):
         """Process data: limit to last 3 years + calculate deltas"""
-        self.dates = self.dates.sort_values("date").reset_index(drop=True)
         self.df = self.dates.copy()
         self.df['date'] = pd.to_datetime(self.df['date'], errors="coerce")
         self.df = self.df.dropna(subset=['date'])
+        # Initialize prediction variables (they will remain empty if there is no data file yet)
+        self.pred50 = None
+        self.pred25 = None
+        self.pred75 = None
+        self.pred_date = "Not enough data"
+        self.time_med = None
+        self.time_2575 = []
+        self.delta_med = None
+        self.delta_25 = None
+        self.delta_75 = None
+
+        # Stop if we have no data
+        if len(self.df) == 0:
+            return
+
         # Limit data to last 36 non-missing obs
         self.df = self.df.tail(36)
         self.df["delta"] = self.df['date'].diff().dt.days
-        #self.df["delta"] = self.df["delta"].fillna(0).astype(int)
         self.df["delta_clean"] = np.select(
             [(self.df["delta"] > 35)],
             [np.nan],
             default = self.df["delta"])
 
-        # Recent data for prediction = 12 non-missing deltas
+        # Recent data for prediction: 12 non-missing deltas
         self.recent = self.df.dropna(subset=['delta_clean']).tail(12)
+
+        # Stop when there is not enough data for prediction 
+        if len(self.recent) < 3:
+            return
 
         # Predicted dates = last date + median/quartiles delta
         # Exact timedelta is used to get the dates
@@ -58,13 +76,9 @@ class CycleTracker:
         self.delta_75 = pd.Timedelta(days = self.recent["delta_clean"].quantile(0.75))
         
         self.pred50 = (pd.to_datetime(self.dates['date'].iloc[-1]) + self.delta_med).date()
+        self.pred_date = str(self.pred50)
         self.pred25 = (pd.to_datetime(self.dates['date'].iloc[-1]) + self.delta_25).date()
         self.pred75 = (pd.to_datetime(self.dates['date'].iloc[-1]) + self.delta_75).date()
-
-        if len(self.recent) < 3:
-            self.pred_date = "Not enough data"
-        else:
-            self.pred_date = str(self.pred50)
 
         # Predicted time = remaining time
         self.time_med = (self.pred50 - datetime.now().date()).days
@@ -149,8 +163,8 @@ class CycleTracker:
 
         # Prediction plot ---
         self.donut = [
-            self.delta_med.days - self.time_med,
-            self.time_med
+            self.delta_med.days - max(self.time_med, 0),
+            max(self.time_med, 0)
         ]
         inner_circle = plt.Circle( (0,0), 0.7, color = 'white', ec = c_outline, linewidth = lw) # to change pie into donut 
 

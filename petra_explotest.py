@@ -52,12 +52,17 @@ tracker.time_2575
 
 
 
-
 # Prediction plot ---
 donut = [
     tracker.delta_med.days - tracker.time_med,
-    tracker.time_med
+    max(tracker.time_med, 0)
 ]
+
+    self.donut = [
+            self.delta_med.days - self.time_med,
+            self.time_med
+        ]
+
 inner_circle = plt.Circle( (0,0), 0.7, color = 'white', ec = c_outline, linewidth = lw) # to change pie into donut 
 
 sns.set_style("white")
